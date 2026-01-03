@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>ADD TOKEN BY FANDI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins}
+body{
+  min-height:100vh;
+  background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:#fff
+}
+.box{
+  width:100%;
+  max-width:420px;
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(12px);
+  border-radius:16px;
+  padding:30px;
+  box-shadow:0 0 30px rgba(255,81,47,.6);
+  animation:fade .6s
+}
+.hidden{display:none}
+h2{text-align:center;margin-bottom:15px}
+.input{margin-bottom:15px}
+label{font-size:13px;opacity:.8}
+input{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:rgba(255,255,255,.15);
+  color:white
+}
+input:focus{outline:none;box-shadow:0 0 10px #ff4ecd}
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(135deg,#ff512f,#dd2476);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  transition:.3s
+}
+button:hover{transform:scale(1.03)}
+.status{text-align:center;margin-top:10px;font-size:14px}
+.success{color:#00ffcc}
+.error{color:#ff5e5e}
+
+@keyframes fade{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ===== DASHBOARD ===== */
+#dashBox{
+  width:100%;
+  max-width:900px;
+  display:none;
+  animation:fade .6s
+}
+.dashboard{
+  display:flex;
+  gap:20px
+}
+.panel{
+  flex:1;
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(12px);
+  border-radius:16px;
+  padding:20px
+}
+.token-item{
+  background:rgba(255,255,255,.12);
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center
+}
+.token-item span{
+  max-width:65%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:13px
+}
+.token-item button{
+  background:#ff3b3b;
+  padding:6px 10px;
+  font-size:12px
+}
+@media(max-width:768px){
+  .dashboard{flex-direction:column}
+}
+
+.fade-in {
+    animation: fade .4s ease;
+}
+
+.pop {
+    animation: pop .4s ease;
+}
+
+.slide-out {
+    animation: slideOut .35s ease forwards;
+}
+
+@keyframes slideOut {
+    to {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div class="box" id="loginBox">
+  <h2>🔐 Admin Login</h2>
+  <div class="input">
+    <label>Username</label>
+    <input id="user">
+  </div>
+  <div class="input">
+    <label>Password</label>
+    <input id="pass" type="password">
+  </div>
+  <button onclick="login()">Login</button>
+  <div class="status" id="loginStatus"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashBox">
+  <div class="dashboard">
+
+    <div class="panel">
+      <h2>🤖 Bot Token Manager</h2>
+      <div class="input">
+        <label>Nama Bot</label>
+        <input id="botName">
+      </div>
+      <div class="input">
+        <label>Token Bot</label>
+        <input id="botToken">
+      </div>
+      <button onclick="saveToken()">Save</button>
+      <button style="margin-top:10px;background:#444" onclick="logout()">Logout</button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="text-align:center;margin-bottom:10px">📦 Token List</h3>
+      <div id="tokenList"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ADMIN={username:"admin",password:"123456"}
+const GITHUB_TOKEN="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"
+const OWNER="ItachiCrash12"
+const REPO="Woy"
+const FILE_PATH="tokens.json"
+
+function login(){
+  if(user.value===ADMIN.username&&pass.value===ADMIN.password){
+    localStorage.setItem("login","true")
+    showDash()
+  }else loginStatus.innerText="❌ Login salah"
+}
+function logout(){
+  localStorage.removeItem("login")
+  location.reload()
+}
+function showDash(){
+  loginBox.style.display="none"
+  dashBox.style.display="block"
+  loadTokens()
+}
+if(localStorage.getItem("login")==="true")showDash()
+
+async function saveToken(){
+  if(!botName.value||!botToken.value){
+    status.className="status error"
+    status.innerText="❌ Lengkapi data"
+    return
+  }
+  status.innerText="⏳ Saving..."
+  const api=`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`
+  const res=await fetch(api,{headers:{Authorization:`token ${GITHUB_TOKEN}`}})
+  const data=await res.json()
+  const list=data.content?JSON.parse(atob(data.content)):[]
+  list.push({name:botName.value,token:botToken.value})
+  await fetch(api,{
+    method:"PUT",
+    headers:{
+      Authorization:`token ${GITHUB_TOKEN}`,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      message:"Add token",
+      content:btoa(JSON.stringify(list,null,2)),
+      sha:data.sha
+    })
+  })
+  status.className = "status success pop"
+status.innerText = "✅ Token tersimpan!"
+loadTokens()
+}
+
+async function loadTokens() {
+    tokenList.innerHTML = "⏳ Loading..."
+    try {
+        const api = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`
+        const res = await fetch(api, {
+            headers: { Authorization: `token ${GITHUB_TOKEN}` }
+        })
+        
+        let list = []
+        if (res.ok) {
+            const data = await res.json()
+            if (data.content) {
+                list = JSON.parse(atob(data.content))
+            }
+        }
+        
+        tokenList.innerHTML = ""
+        if (list.length === 0) {
+            tokenList.innerHTML = "<center><small>Belum ada token</small></center>"
+            return
+        }
+        
+        list.forEach((t, i) => {
+            const div = document.createElement("div")
+            div.className = "token-item fade-in"
+            div.innerHTML = `
+        <span>
+          <b>${t.name}</b><br>
+          <small class="tok" data-hide="1">••••••••••</small>
+        </span>
+        <div>
+          <button onclick="toggleToken(this,'${t.token}')">👁</button>
+          <button onclick="deleteToken(${i},this)">🗑</button>
+        </div>
+      `
+            tokenList.appendChild(div)
+        })
+    } catch {
+        tokenList.innerHTML = "❌ Gagal load token"
+    }
+}
+
+async function deleteToken(i, btn) {
+    if (!confirm("Hapus token?")) return
+    
+    const item = btn.closest(".token-item")
+    item.classList.add("slide-out")
+    
+    setTimeout(async () => {
+        const api = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`
+        const res = await fetch(api, { headers: { Authorization: `token ${GITHUB_TOKEN}` } })
+        const data = await res.json()
+        const list = JSON.parse(atob(data.content))
+        list.splice(i, 1)
+        
+        await fetch(api, {
+            method: "PUT",
+            headers: {
+                Authorization: `token ${GITHUB_TOKEN}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                message: "Delete token",
+                content: btoa(JSON.stringify(list, null, 2)),
+                sha: data.sha
+            })
+        })
+        loadTokens()
+    }, 300)
+}
+
+function toggleToken(btn, token) {
+    const el = btn.closest(".token-item").querySelector(".tok")
+    if (el.dataset.hide === "1") {
+        el.innerText = token
+        el.dataset.hide = "0"
+        btn.innerText = "🙈"
+    } else {
+        el.innerText = "••••••••••"
+        el.dataset.hide = "1"
+        btn.innerText = "👁"
+    }
+}
+
+</script>
+</body>
+</html>
